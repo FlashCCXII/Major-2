@@ -75,39 +75,55 @@ void batch_mode(const char *filename) {
 
 // Execute Command
 void execute_command(char *command) {
-    pid_t pid = fork();
+    // Tokenize the input command
+    char *args[MAX_LINE / 2 + 1];
+    char *token = strtok(command, " ");
+    int i = 0;
 
-    if (pid < 0) {
-        perror("fork");
-    } else if (pid == 0) {
-        // Child process
-        char *args[MAX_LINE / 2 + 1];
-        char *token = strtok(command, " ");
-        int i = 0;
+    while (token && i < MAX_LINE / 2) {
+        args[i++] = token;
+        token = strtok(NULL, " ");
+    }
+    args[i] = NULL;
 
-        while (token && i < MAX_LINE / 2) {
-            args[i++] = token;
-            token = strtok(NULL, " ");
+    // Check for built-in commands
+    if (strcmp(args[0], "cd") == 0) {
+        handle_cd(args[1]); // Pass the second argument to handle_cd} 
+        else if (strcmp(args[0], "exit") == 0) {
+        printf("Exiting shell...\n");
+        exit(0);} 
+        else {
+        // Non-built-in commands: Use fork and exec
+        pid_t pid = fork();
+        if (pid < 0) {
+            perror("fork");} 
+        else if (pid == 0) {
+            // Child process
+            if (execvp(args[0], args) < 0) {
+                perror("execvp");
+                exit(1);
+            }
+        } 
+        else {
+            // Parent process waits
+            wait(NULL);
         }
-        args[i] = NULL;
-
-        if (execvp(args[0], args) < 0) {
-            perror("execvp");
-            exit(1);
-        }
-    } else {
-        // Parent process waits
-        wait(NULL);
     }
 }
 
 // Built-in Command: cd
 void handle_cd(char *path) {
-    if (!path) {
+    if (path == NULL) {
+        // If no path is specified, change to HOME directory
         path = getenv("HOME");
+        if (path == NULL) {
+            fprintf(stderr, "cd: HOME not set\n");
+            return;
+        }
     }
     if (chdir(path) != 0) {
-        perror("chdir");
+        // Handle errors from chdir
+        fprintf(stderr, "cd: %s: %s\n", path, strerror(errno));
     }
 }
 
