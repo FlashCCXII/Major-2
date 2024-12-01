@@ -20,6 +20,9 @@ char *history[HISTORY_SIZE];
 int history_count = 0;
 
 int main(int argc, char *argv[]) {
+    signal(SIGINT, SIG_IGN);   // Ignore Ctrl-C
+    signal(SIGTSTP, SIG_IGN);  // Ignore Ctrl-Z
+
     if (argc > 2) {
         fprintf(stderr, "Usage: %s [batchFile]\n", argv[0]);
         exit(1);
@@ -75,40 +78,75 @@ void batch_mode(const char *filename) {
 
 // Execute Command
 void execute_command(char *command) {
-    // Tokenize the input command
     char *args[MAX_LINE / 2 + 1];
     char *token = strtok(command, " ");
     int i = 0;
 
+    int input_redirect = -1; // File descriptor for input redirection
+    int output_redirect = -1; // File descriptor for output redirection
+
     while (token && i < MAX_LINE / 2) {
-        args[i++] = token;
+        if (strcmp(token, "<") == 0) { // Input redirection
+            token = strtok(NULL, " ");
+            input_redirect = open(token, O_RDONLY);
+            if (input_redirect < 0) {
+                perror("open for input");
+                return;
+            }
+        } else if (strcmp(token, ">") == 0) { // Output redirection
+            token = strtok(NULL, " ");
+            output_redirect = open(token, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+            if (output_redirect < 0) {
+                perror("open for output");
+                return;
+            }
+        } else {
+            args[i++] = token;
+        }
         token = strtok(NULL, " ");
     }
     args[i] = NULL;
 
+    if (args[0] == NULL) return; // Ignore empty commands
+
     // Check for built-in commands
     if (strcmp(args[0], "cd") == 0) {
-        handle_cd(args[1]); // Pass the second argument to handle_cd} 
-        else if (strcmp(args[0], "exit") == 0) {
-        printf("Exiting shell...\n");
-        exit(0);} 
-        else {
+        handle_cd(args[1]);
+    } else if (strcmp(args[0], "exit") == 0) {
+        handle_exit();
+    } else {
         // Non-built-in commands: Use fork and exec
         pid_t pid = fork();
         if (pid < 0) {
-            perror("fork");} 
-        else if (pid == 0) {
+            perror("fork");
+        } else if (pid == 0) {
             // Child process
+            setpgid(0, 0); // Create a new process group for the child
+            if (input_redirect != -1) {
+                dup2(input_redirect, STDIN_FILENO);
+                close(input_redirect);
+            }
+            if (output_redirect != -1) {
+                dup2(output_redirect, STDOUT_FILENO);
+                close(output_redirect);
+            }
+
             if (execvp(args[0], args) < 0) {
                 perror("execvp");
                 exit(1);
             }
-        } 
-        else {
-            // Parent process waits
-            wait(NULL);
+        } else {
+            // Parent process
+            setpgid(pid, pid);              // Set process group for the child
+            tcsetpgrp(STDIN_FILENO, pid);   // Give terminal control to child
+            waitpid(pid, NULL, WUNTRACED);  // Wait for the child process
+            tcsetpgrp(STDIN_FILENO, getpid()); // Restore terminal to parent
         }
     }
+
+    // Close file descriptors if opened
+    if (input_redirect != -1) close(input_redirect);
+    if (output_redirect != -1) close(output_redirect);
 }
 
 // Built-in Command: cd
