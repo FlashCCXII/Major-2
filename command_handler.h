@@ -3,7 +3,6 @@
 
 void execute_command(char *command);
 void handle_exit();
-void handle_alias(char *alias, char *command);
-void execute_alias(char *alias);
+void handle_input(char *input);
 
 #endif // COMMAND_HANDLER_H
