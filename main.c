@@ -3,6 +3,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include "command_handler.h"
 
 #define MAX_LINE 512
 #define HISTORY_SIZE 20
