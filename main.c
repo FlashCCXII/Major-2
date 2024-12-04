@@ -34,6 +34,24 @@ int main(int argc, char *argv[]) {
         interactive_mode();
     }
 
+    while (1){
+        printf("> ");
+        fgets(inpt, 1024, stdin);
+        inpt[strlen(inpt)-1] = '\0';
+        if(strcmp(inpt, "myhistory") == 0){
+            print_hist();
+        }else if (strncmp(inpt, "myhistory -e", 13) == 0){
+            int num = atoi(inpt+13);
+            execute_hist(num);
+        }else if (strcmp(inpt, "myhistory -c") == 0){
+            cmds_Num = 0;
+            printf("History cleared\n");
+        }else{
+            add_cmd(inpt);
+            system(inpt);
+        }
+    }
+
     return 0;
 }
 
@@ -177,6 +195,6 @@ void handle_path(char *args) {
 }
 
 // Built-in Command: myhistory
-void handle_myhistory(char *args) {
+void add_cmd(char *cmd) {
     // TODO: Implement history functionality
 }
