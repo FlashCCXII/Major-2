@@ -3,6 +3,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include "alias_handler.c"
 
 
 #define MAX_LINE 512
