@@ -1,17 +1,13 @@
 CC = gcc
-
 CFLAGS = -Wall -g
-
-EXEC = binops
-
-SRC = main.c newhistory.c alias_handler.c command_handler.c
-
+EXEC = newshell
+SRC = main.c alias_handler.c command_handler.c
 OBJ = $(SRC:.c=.o)
 
 all: $(EXEC)
 
 $(EXEC): $(OBJ)
-	$(CC) $(CFLAGS) -o $(EXEC) $(OBJ) -lm
+	$(CC) $(CFLAGS) -o $(EXEC) $(OBJ)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $<
