@@ -132,7 +132,7 @@ void execute_command(char *command) {
 
     add_cmd(command);
 
-    if (command=='exit'){
-        handle_exit();
+    if (strcmp(args[0], "exit") == 0) {
+    handle_exit(); 
     }
 }
