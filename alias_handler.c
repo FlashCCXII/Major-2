@@ -5,26 +5,43 @@
 #include <string.h>
 #include <stdlib.h>
 
-void handle_input(char *input) {
-    if (strncmp(input, "myhistory", 9) == 0) {
-    char *args = input + 9; // Skip "myhistory"
-    while (*args == ' ') args++; // Trim leading spaces
+#define MAX_LINE 1024
 
-    if (*args == '\0') {
-        // Print the history
-        print_history();
-    } else if (strcmp(args, "-c") == 0) {
-        // Clear the history
-        clear_history();
-    } else if (strncmp(args, "-e", 2) == 0) {
-        // Execute a command from history
-        args += 2;
-        while (*args == ' ') args++; // Trim spaces
-        int num = atoi(args);
-        execute_history_command(num);
+typedef struct {
+    char alias[MAX_LINE];
+    char command[MAX_LINE];
+} Alias;
+
+#define MAX_ALIASES 10
+Alias aliases[MAX_ALIASES];
+int alias_count = 0;
+
+void handle_alias(char *alias, char *command) {
+    if (alias_count < MAX_ALIASES) {
+        strncpy(aliases[alias_count].alias, alias, MAX_LINE);
+        strncpy(aliases[alias_count].command, command, MAX_LINE);
+        alias_count++;
     } else {
-        printf("Invalid myhistory usage\n");
+        printf("Alias limit reached.\n");
     }
-    return;
+}
+
+int is_alias(char *cmd) {
+    for (int i = 0; i < alias_count; i++) {
+        if (strcmp(aliases[i].alias, cmd) == 0) {
+            return 1; // Alias found
+        }
     }
+    return 0; // Alias not found
+}
+
+void execute_alias(char *alias) {
+    for (int i = 0; i < alias_count; i++) {
+        if (strcmp(aliases[i].alias, alias) == 0) {
+            printf("Executing alias: %s\n", aliases[i].command);
+            handle_input(aliases[i].command);
+            return;
+        }
+    }
+    printf("Alias not found.\n");
 }
