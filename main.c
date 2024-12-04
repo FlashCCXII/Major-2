@@ -8,7 +8,7 @@
 #include <signal.h>
 #include "alias_handler.h"
 #include "command_handler.h"
-#include "shared_data.h" 
+#include "new_history.h" 
 
 // Constants
 #define MAX_LINE 512
@@ -22,9 +22,6 @@ char *path = NULL;
 // Function Prototypes
 void interactive_mode();
 void batch_mode(const char *filename);
-void add_cmd(char *cmd);
-void print_history();
-void execute_history(int num);
 void handle_path(char *args);
 void handle_exit();
 
@@ -115,36 +112,6 @@ void handle_path(char *args) {
     } else {
         fprintf(stderr, "Invalid argument for path command.\n");
     }
-}
-
-
-// Add Command to History
-void add_cmd(char *cmd) {
-    if (history_count < HISTORY_SIZE) {
-        history[history_count++] = strdup(cmd);
-    } else {
-        free(history[0]); // Free the oldest command
-        for (int i = 1; i < HISTORY_SIZE; i++) {
-            history[i - 1] = history[i];
-        }
-        history[HISTORY_SIZE - 1] = strdup(cmd);
-    }
-}
-
-// Print Command History
-void print_history() {
-    for (int i = 0; i < history_count; i++) {
-        printf("%d: %s\n", i + 1, history[i]);
-    }
-}
-
-// Execute Command from History
-void execute_history(int num) {
-    if (num <= 0 || num > history_count) {
-        fprintf(stderr, "Invalid history number\n");
-        return;
-    }
-    handle_input(history[num - 1]); // Execute the command
 }
 
 void handle_exit() {
