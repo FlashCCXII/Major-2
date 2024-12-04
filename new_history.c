@@ -36,7 +36,7 @@ void print_history() {
 }
 
 // Execute a command from history
-void execute_history_command(int num) {
+void execute_history(int num) {
     if (num < 0 || num >= cmds_Num) {
         printf("Invalid command number\n");
         return;
