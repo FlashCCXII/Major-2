@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -Wall -g
 EXEC = newshell
-SRC = main.c alias_handler.c command_handler.c
+SRC = main.c alias_handler.c command_handler.c new_history.c
 OBJ = $(SRC:.c=.o)
 
 all: $(EXEC)
