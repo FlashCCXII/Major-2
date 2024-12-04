@@ -191,7 +191,7 @@ void handle_exit() {
 
 // Built-in Command: path
 void handle_path(char *args) {
-    // TODO: Implement path manipulation
+    handle_alias(args);
 }
 
 // Built-in Command: myhistory
