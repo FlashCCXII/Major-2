@@ -11,7 +11,7 @@
 #include "new_history.h" 
 
 // Constants
-#define MAX_LINE 512
+#define MAX_LINE 1024
 #define HISTORY_SIZE 20
 
 // Global Variables
@@ -61,7 +61,6 @@ void interactive_mode() {
         line[strcspn(line, "\n")] = 0;
         if (strlen(line) == 0) continue;
 
-        add_cmd(line); // Add to history
         handle_input(line); // Handle the command
     }
 }
@@ -79,8 +78,6 @@ void batch_mode(const char *filename) {
         line[strcspn(line, "\n")] = 0; // Remove newline
         if (strlen(line) == 0) continue;
 
-        add_cmd(line); // Add to history
-        printf("%s\n", line); // Echo the command
         handle_input(line); // Handle the command
     }
 
