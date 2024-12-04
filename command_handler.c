@@ -10,36 +10,8 @@
 #include <errno.h>
 
 #define MAX_LINE 1024
+char line[MAX_LINE];
 
-typedef struct {
-    char alias[MAX_LINE];
-    char command[MAX_LINE];
-} Alias;
-
-#define MAX_ALIASES 10
-Alias aliases[MAX_ALIASES];
-int alias_count = 0;
-
-void handle_alias(char *alias, char *command) {
-    if (alias_count < MAX_ALIASES) {
-        strncpy(aliases[alias_count].alias, alias, MAX_LINE);
-        strncpy(aliases[alias_count].command, command, MAX_LINE);
-        alias_count++;
-    } else {
-        printf("Alias limit reached.\n");
-    }
-}
-
-void execute_alias(char *alias) {
-    for (int i = 0; i < alias_count; i++) {
-        if (strcmp(aliases[i].alias, alias) == 0) {
-            printf("Executing alias: %s\n", aliases[i].command);
-            handle_input(aliases[i].command);
-            return;
-        }
-    }
-    printf("Alias not found.\n");
-}
 
 void handle_cd(char *path) {
     if (path == NULL) {
@@ -88,28 +60,22 @@ void execute_command(char *command) {
 
     if (args[0] == NULL) return;
 
-    // Alias substitution
-    for (int j = 0; j < alias_count; j++) {
-        if (strcmp(aliases[j].alias, args[0]) == 0) {
-            printf("Substituting alias: %s -> %s\n", args[0], aliases[j].command);
-            handle_input(aliases[j].command);
-            return;
-        }
-    }
-
     // Fork and execute external commands
     pid_t pid = fork();
     if (pid < 0) {
         perror("fork");
     } else if (pid == 0) {
+        
         if (input_redirect != -1) {
-            dup2(input_redirect, STDIN_FILENO);
-            close(input_redirect);
+        dup2(input_redirect, STDIN_FILENO);
+        close(input_redirect);
         }
+
         if (output_redirect != -1) {
-            dup2(output_redirect, STDOUT_FILENO);
-            close(output_redirect);
+        dup2(output_redirect, STDOUT_FILENO);
+        close(output_redirect);
         }
+
         if (execvp(args[0], args) < 0) {
             perror("execvp");
             exit(1);
@@ -135,4 +101,57 @@ void execute_command(char *command) {
     if (strcmp(args[0], "exit") == 0) {
     handle_exit(); 
     }
+}
+
+void handle_input(char *input) {
+    char *args[MAX_LINE / 2 + 1];
+    char *token = strtok(input, " ");  // Fix: Use input, not line
+    int i = 0;
+
+    if (is_alias(token)) {
+        // Substitute the alias with the actual command
+        execute_alias(token); 
+        return;
+    }
+
+    while (token != NULL) {
+        args[i++] = token;
+        token = strtok(NULL, " ");
+    }
+    args[i] = NULL;
+
+    if (args[0] == NULL) return; // Empty line, do nothing
+
+    if (strcmp(args[0], "exit") == 0) {
+        handle_exit();
+    } else if (strcmp(args[0], "cd") == 0) {
+        handle_cd(args[1]);  // Ensure correct argument handling for cd
+    } else if (strcmp(args[0], "alias") == 0) {
+        handle_alias(args[1], args[2]);  // Correct arguments for alias
+    } else if (is_alias(args[0])) {
+        execute_alias(args[0]);  // Ensure alias is executed
+    } else {
+        execute_command(input);  // Call execute_command with input
+    }
+
+    if (strncmp(input, "myhistory", 9) == 0) {
+        char *args = input + 9; // Skip "myhistory"
+        while (*args == ' ') args++; // Trim leading spaces
+        if (*args == '\0') {
+        // Print the history
+        print_history();
+        } else if (strcmp(args, "-c") == 0) {
+        // Clear the history
+        clear_history();
+        } else if (strncmp(args, "-e", 2) == 0) {
+        // Execute a command from history
+        args += 2;
+        while (*args == ' ') args++; // Trim spaces
+        int num = atoi(args);
+        execute_history(num);
+        } else {
+            printf("Invalid myhistory usage\n");
+        }
+        return;
+        }
 }
