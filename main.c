@@ -17,14 +17,23 @@ void handle_cd(char *path);
 void handle_exit();
 void handle_path(char *args);
 void handle_myhistory(char *args);
+void add_cmd(char *cmd);
+void print_history();
+void execute_history(int num);
 
 char *history[HISTORY_SIZE];
 int history_count = 0;
+char *path = NULL;
 
 int main(int argc, char *argv[]) {
     signal(SIGINT, SIG_IGN);   // Ignore Ctrl-C
     signal(SIGTSTP, SIG_IGN);  // Ignore Ctrl-Z
-
+// Initialize the path variable with the current PATH
+    path = strdup(getenv("PATH"));
+    if (!path) {
+        perror("strdup");
+        exit(1);
+    }
     if (argc > 2) {
         fprintf(stderr, "Usage: %s [batchFile]\n", argv[0]);
         exit(1);
@@ -34,28 +43,11 @@ int main(int argc, char *argv[]) {
         batch_mode(argv[1]);
     } else {
         interactive_mode();
-    }
-
-    while (1){
-        printf("> ");
-        fgets(inpt, 1024, stdin);
-        inpt[strlen(inpt)-1] = '\0';
-        if(strcmp(inpt, "myhistory") == 0){
-            print_hist();
-        }else if (strncmp(inpt, "myhistory -e", 13) == 0){
-            int num = atoi(inpt+13);
-            execute_hist(num);
-        }else if (strcmp(inpt, "myhistory -c") == 0){
-            cmds_Num = 0;
-            printf("History cleared\n");
-        }else{
-            add_cmd(inpt);
-            system(inpt);
-        }
-    }
-
     return 0;
-}
+    }
+
+
+       
 
 // Interactive Mode
 void interactive_mode() {
@@ -168,7 +160,37 @@ void execute_command(char *command) {
     if (input_redirect != -1) close(input_redirect);
     if (output_redirect != -1) close(output_redirect);
 }
+// Built-in Command: path
+void handle_path(char *args) {
+    if (args == NULL) {
+        // Print current PATH
+        printf("Current PATH: %s\n", path);
+    } else {
+        // Add a directory to PATH if it's not already there
+        if (strstr(path, args)) {
+            printf("Directory '%s' is already in PATH.\n", args);
+            return;
+        }
 
+        // Add the new directory to PATH
+        char *new_path = (char *)malloc(strlen(path) + strlen(args) + 2);
+        if (!new_path) {
+            perror("malloc");
+            return;
+        }
+
+        // Append the new directory to the existing PATH
+        if (strlen(path) > 0) {
+            sprintf(new_path, "%s:%s", path, args);
+        } else {
+            strcpy(new_path, args);
+        }
+
+        free(path);
+        path = new_path;
+        printf("Updated PATH: %s\n", path);
+    }
+}
 // Built-in Command: cd
 void handle_cd(char *path) {
     if (path == NULL) {
@@ -188,15 +210,35 @@ void handle_cd(char *path) {
 // Built-in Command: exit
 void handle_exit() {
     printf("Exiting shell...\n");
+    free(path);
     exit(0);
 }
 
-// Built-in Command: path
-void handle_path(char *args) {
-    handle_alias(args);
-}
 
 // Built-in Command: myhistory
 void add_cmd(char *cmd) {
-    // TODO: Implement history functionality
+    // Add command to history
+if (history_count < HISTORY_SIZE) {
+        history[history_count++] = strdup(cmd);
+    } else {
+        // Shift commands to make room for the new one
+        free(history[0]);
+        for (int i = 1; i < HISTORY_SIZE; i++) {
+            history[i - 1] = history[i];
+        }
+        history[HISTORY_SIZE - 1] = strdup(cmd);
+    }
+}
+void print_history() {
+    for (int i = 0; i < history_count; i++) {
+        printf("%d: %s\n", i + 1, history[i]);
+    }
+}
+void execute_history(int num) {
+    if (num <= 0 || num > history_count) {
+        fprintf(stderr, "Invalid history number\n");
+        return;
+    }
+    // Execute the command stored in history[num - 1]
+    execute_command(history[num - 1]);
 }
