@@ -1,6 +1,6 @@
 #include "command_handler.h"
 #include "alias_handler.h"
-#include "shared_data.h"
+#include "new_history.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -55,7 +55,6 @@ void handle_cd(char *path) {
         fprintf(stderr, "cd: %s: %s\n", path, strerror(errno));
     }
 }
-
 
 void execute_command(char *command) {
     char *args[MAX_LINE / 2 + 1];
@@ -130,4 +129,10 @@ void execute_command(char *command) {
 	}
 
     if (output_redirect != -1) close(output_redirect);
+
+    add_cmd(command);
+
+    if (command=='exit'){
+        handle_exit();
+    }
 }
