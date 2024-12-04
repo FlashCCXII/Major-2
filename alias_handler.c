@@ -1,29 +1,30 @@
 #include "alias_handler.h"
 #include "command_handler.h"
-#include "shared_data.h"
+#include "new_history.h"
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 void handle_input(char *input) {
-    if (strncmp(input, "alias ", 6) == 0) {
-        char *alias = strtok(input + 6, "=");
-        char *command = strtok(NULL, "\n");
-        if (alias && command) {
-            handle_alias(alias, command);
-            printf("Alias '%s' set to '%s'\n", alias, command);
-        } else {
-            printf("Invalid alias syntax. Use: alias <name>=<command>\n");
-        }
-    } else if (strncmp(input, "history", 7) == 0) {
+    if (strncmp(input, "myhistory", 9) == 0) {
+    char *args = input + 9; // Skip "myhistory"
+    while (*args == ' ') args++; // Trim leading spaces
+
+    if (*args == '\0') {
+        // Print the history
         print_history();
-    } else if (strncmp(input, "!!", 2) == 0) {
-        if (history_count > 0) {
-            handle_input(history[history_count - 1]);
-        } else {
-            printf("No commands in history.\n");
-        }
+    } else if (strcmp(args, "-c") == 0) {
+        // Clear the history
+        clear_history();
+    } else if (strncmp(args, "-e", 2) == 0) {
+        // Execute a command from history
+        args += 2;
+        while (*args == ' ') args++; // Trim spaces
+        int num = atoi(args);
+        execute_history_command(num);
     } else {
-        add_cmd(input);  
-        execute_command(input);
-	}
+        printf("Invalid myhistory usage\n");
+    }
+    return;
+    }
 }
