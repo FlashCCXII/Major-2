@@ -12,7 +12,6 @@
 #define MAX_LINE 1024
 char line[MAX_LINE];
 
-
 void handle_cd(char *path) {
     if (path == NULL) {
         // If no path is specified, change to HOME directory
@@ -58,7 +57,7 @@ void execute_command(char *command) {
     }
     args[i] = NULL;
 
-    if (args[0] == NULL) return;
+    if (args[0] == NULL) return;  // Empty command
 
     // Fork and execute external commands
     pid_t pid = fork();
@@ -66,46 +65,43 @@ void execute_command(char *command) {
         perror("fork");
     } else if (pid == 0) {
         
+        // Handle redirection in the child process
         if (input_redirect != -1) {
-        dup2(input_redirect, STDIN_FILENO);
-        close(input_redirect);
+            dup2(input_redirect, STDIN_FILENO);
+            close(input_redirect);
         }
 
         if (output_redirect != -1) {
-        dup2(output_redirect, STDOUT_FILENO);
-        close(output_redirect);
+            dup2(output_redirect, STDOUT_FILENO);
+            close(output_redirect);
         }
 
         if (execvp(args[0], args) < 0) {
             perror("execvp");
-            exit(1);
+            exit(1);  // Exit child process on exec failure
         }
     } else {
         waitpid(pid, NULL, 0);
     }
 
+    // Close any open file descriptors after use
     if (input_redirect != -1) {
-    // Ensure the file exists before redirecting
-    if (access(token, F_OK) != 0) {
-        perror("open for input");
-        return;
+        close(input_redirect);
     }
-    dup2(input_redirect, STDIN_FILENO);
-    close(input_redirect);
-	}
-
-    if (output_redirect != -1) close(output_redirect);
+    if (output_redirect != -1) {
+        close(output_redirect);
+    }
 
     add_cmd(command);
 
     if (strcmp(args[0], "exit") == 0) {
-    handle_exit(); 
+        handle_exit(); 
     }
 }
 
 void handle_input(char *input) {
     char *args[MAX_LINE / 2 + 1];
-    char *token = strtok(input, " ");  // Fix: Use input, not line
+    char *token = strtok(input, " ");
     int i = 0;
 
     if (is_alias(token)) {
@@ -138,20 +134,20 @@ void handle_input(char *input) {
         char *args = input + 9; // Skip "myhistory"
         while (*args == ' ') args++; // Trim leading spaces
         if (*args == '\0') {
-        // Print the history
-        print_history();
+            // Print the history
+            print_history();
         } else if (strcmp(args, "-c") == 0) {
-        // Clear the history
-        clear_history();
+            // Clear the history
+            clear_history();
         } else if (strncmp(args, "-e", 2) == 0) {
-        // Execute a command from history
-        args += 2;
-        while (*args == ' ') args++; // Trim spaces
-        int num = atoi(args);
-        execute_history(num);
+            // Execute a command from history
+            args += 2;
+            while (*args == ' ') args++; // Trim spaces
+            int num = atoi(args);
+            execute_history(num);
         } else {
             printf("Invalid myhistory usage\n");
         }
-        return;
-        }
+    }
 }
+
