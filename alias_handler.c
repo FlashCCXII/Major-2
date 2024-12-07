@@ -40,8 +40,7 @@ void execute_alias(char *alias) {
     for (int i = 0; i < alias_count; i++) {
         if (strcmp(aliases[i].alias, alias) == 0) {
             printf("Executing alias: %s\n", aliases[i].command);
-            // Instead of calling handle_input directly, we return the command to execute
-            // This way, the main command handler can decide what to do with it
+            
             handle_input(aliases[i].command);
             return;
         }
